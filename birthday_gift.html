@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Birthday Surprise</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<style>
+    /* Custom Scrollbar Hiding */
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Floating Animation */
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      20% { opacity: 0.8; }
+      80% { opacity: 0.6; }
+      100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
+    }
+
+    @keyframes pulse-soft {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+    
+    @keyframes confettiRain {
+      0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+
+    .animate-float-1 { animation: floatUp 4s ease-in infinite; }
+    .animate-float-2 { animation: floatUp 5s ease-in 1s infinite; }
+    .animate-float-3 { animation: floatUp 6s ease-in 2s infinite; }
+    
+    .animate-pulse-slow { animation: pulse-soft 3s infinite ease-in-out; }
+    .animate-wiggle { animation: wiggle 2s infinite ease-in-out; }
+    
+    /* Glassmorphism utility */
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    
+    /* Modal styles */
+    .modal-overlay {
+      background-color: rgba(0, 0, 0, 0.5);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-content {
+      background-color: white;
+      border-radius: 24px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+      position: relative;
+    }
+    
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+    
+    .close-modal {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #FB91C5;
+    }
+    
+    /* Page transition */
+    .page {
+      display: none;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.4s ease;
+    }
+    
+    .page.active {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Custom scrollbar for gallery */
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #FB91C5;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-pink-50 to-orange-50 flex items-center justify-center min-h-screen p-4 font-sans antialiased text-[#4A3731]">
+<!-- Confetti container -->
+<div id="confetti-container" class="fixed top-0 left-0 w-full h-full pointer-events-none z-40"></div>
+
+<!-- Letter Modal -->
+<div id="letter-modal" class="modal-overlay">
+  <div class="modal-content shadow-2xl">
+    <button class="close-modal" id="close-letter-modal">
+      <span class="iconify" data-icon="solar:close-circle-bold"></span>
+    </button>
+    <h2 class="text-2xl font-bold text-[#FB91C5] mb-4 text-center">A Special Letter</h2>
+    <div class="space-y-4 font-serif text-[#4A3731] leading-relaxed">
+      <p>Dear Gaatha,</p>
+      <p id="letter-content">
+        Another year around the sun, and you shine brighter than ever. May this day be filled with all the joy you bring to others. Let's make 2026 our best chapter yet!
+      </p>
+      <p>I'm so grateful to have you in my life. You're not just a friend, you're family. Here's to many more adventures, laughs, and memories together!</p>
+      <p>With all my love,</p>
+      <p class="font-bold text-[#FB91C5]">Your Sanjana</p>
+    </div>
+  </div>
+</div>
+
+<!-- Coupons Modal -->
+<div id="coupons-modal" class="modal-overlay">
+  <div class="modal-content shadow-2xl">
+    <button class="close-modal" id="close-coupons-modal">
+      <span class="iconify" data-icon="solar:close-circle-bold"></span>
+    </button>
+    <h2 class="text-2xl font-bold text-[#FB91C5] mb-6 text-center">Your Birthday Coupons</h2>
+    <div class="space-y-4">
+      <div class="p-4 border-2 border-dashed border-pink-200 rounded-xl bg-pink-50">
+        <h3 class="font-bold text-[#4A3731]">Free Coffee Date</h3>
+        <p class="text-sm text-gray-600">Redeemable anytime for a coffee on me!</p>
+      </div>
+      <div class="p-4 border-2 border-dashed border-pink-200 rounded-xl bg-pink-50">
+        <h3 class="font-bold text-[#4A3731]">Movie Night</h3>
+        <p class="text-sm text-gray-600">Your pick of movie and snacks, my treat!</p>
+      </div>
+      <div class="p-4 border-2 border-dashed border-pink-200 rounded-xl bg-pink-50">
+        <h3 class="font-bold text-[#4A3731]">Breakfast in Bed</h3>
+        <p class="text-sm text-gray-600">I'll bring you breakfast on a weekend of your choice.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden Pic Modal -->
+<div id="hidden-pic-modal" class="modal-overlay">
+  <div class="modal-content shadow-2xl">
+    <button class="close-modal" id="close-hidden-pic-modal">
+      <span class="iconify" data-icon="solar:close-circle-bold"></span>
+    </button>
+    <h2 class="text-2xl font-bold text-[#FB91C5] mb-4 text-center">Our Secret Photo</h2>
+    <div class="aspect-video rounded-xl overflow-hidden mb-4 bg-gray-100">
+      <img alt="Hidden Memory" class="w-full h-full object-cover" id="hidden-pic-img" src=""/>
+    </div>
+    <p class="text-center text-gray-600">A special memory just for you!</p>
+  </div>
+</div>
+
+<!-- Main App Container -->
+<div class="relative w-full max-w-[500px] h-[90vh] max-h-[812px] bg-white rounded-[32px] overflow-hidden shadow-2xl border border-pink-100 flex flex-col mx-auto">
+  <!-- Header (56px) - Fixed transparency -->
+  <header class="h-[56px] w-full absolute top-0 left-0 z-50 glass flex items-center justify-between px-4 border-b border-white/40">
+    <button class="w-10 h-10 flex items-center justify-center rounded-full active:bg-pink-100 transition-colors" id="heart-btn">
+      <span class="iconify text-[#FB91C5] text-2xl" data-icon="solar:heart-bold"></span>
+    </button>
+    <div class="text-sm font-semibold tracking-wide text-[#958296]">Feb 09, 2026</div>
+    <button class="w-10 h-10 flex items-center justify-center rounded-full active:bg-pink-100 transition-colors" id="music-btn">
+      <span class="iconify text-[#FB91C5] text-2xl" data-icon="solar:music-note-bold"></span>
+    </button>
+  </header>
+  
+  <!-- Scrollable Content Area -->
+  <main class="flex-1 mt-[56px] mb-[80px] overflow-y-auto hide-scrollbar bg-gradient-to-b from-[#FFF5F8] to-white relative">
+    
+    <!-- HOME PAGE (Default Active) -->
+    <div id="home-page" class="page active">
+      <!-- Module 1: Hero Birthday Wish -->
+      <section class="relative p-5 pt-4">
+        <div class="relative w-full aspect-[4/5] rounded-[24px] overflow-hidden shadow-lg group">
+          <!-- HERO IMAGE - Change this URL to your image -->
+          <img alt="Birthday Hero Image" class="w-full h-full object-cover" id="img-hero-88" src="C:\Users\raisa\Downloads\gft\Screenshot_20230916_150245.jpg"/>
+          <!-- Gradient Overlay -->
+          <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#FB91C5]/40"></div>
+          <!-- Floating Hearts Overlay -->
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-full px-6 text-center z-10">
+            <!-- MAIN BIRTHDAY MESSAGE - Edit this text -->
+            <h1 class="text-3xl font-bold text-white drop-shadow-md mb-2 font-serif">Happy Birthday, Sweetheart!</h1>
+            <div class="inline-block px-4 py-1 bg-white/30 backdrop-blur-md rounded-full border border-white/50">
+              <span class="text-xs text-white font-medium">✨ Forever cutiee,lovely and pretty</span>
+            </div>
+          </div>
+          <!-- Decorative Floating Particles -->
+          <div class="absolute bottom-10 right-10 text-pink-400 animate-float-1">
+            <span class="iconify" data-icon="solar:heart-bold"></span>
+          </div>
+          <div class="absolute bottom-20 left-10 text-pink-300 animate-float-2">
+            <span class="iconify" data-icon="solar:star-bold"></span>
+          </div>
+          <div class="absolute top-20 right-5 text-white/60 animate-float-3">
+            <span class="iconify" data-icon="ph:sparkle-fill"></span>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Module 2: Our Memories Timeline -->
+      <section class="px-5 py-2">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="iconify text-[#FB91C5]" data-icon="solar:clock-circle-bold"></span>
+          <h2 class="text-lg font-bold text-[#4A3731]">Our Memories</h2>
+          <div class="h-[1px] bg-pink-100 flex-1"></div>
+        </div>
+        <div class="space-y-6 relative ml-2 border-l-2 border-[#F3BCBC]/30 pl-6 pb-2">
+          <!-- Memory 1 -->
+          <div class="relative">
+            <div class="absolute -left-[31px] top-4 w-4 h-4 rounded-full bg-[#FB91C5] border-4 border-white shadow-sm"></div>
+            <div class="bg-white p-3 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#F3BCBC]/20 transform -rotate-1 hover:rotate-0 transition-transform duration-300 cursor-pointer memory-card" data-img="C:\Users\raisa\Downloads\photos_printpdf.2282274.jpg">
+              <div class="aspect-video rounded-xl overflow-hidden mb-3 bg-gray-100">
+                <!-- MEMORY IMAGE 1 - Change this URL -->
+                <img alt="Summer Trip 2024" class="w-full h-full object-cover" src="C:\Users\raisa\Downloads\gft\photos_printpdf.2282274.jpg"/>
+              </div>
+              <!-- MEMORY CAPTION 1 - Edit this text -->
+              <p class="font-serif text-[#958296] text-sm italic">"That signing day, remember?"</p>
+              <div class="mt-2 flex justify-between items-center">
+                <span class="text-[10px] text-gray-400 font-medium">FEB 2023</span>
+                <button class="like-btn">
+                  <span class="iconify text-[#F3BCBC] text-lg" data-icon="solar:heart-outline"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Memory 2 -->
+          <div class="relative">
+            <div class="absolute -left-[31px] top-4 w-4 h-4 rounded-full bg-[#E8B9DD] border-4 border-white shadow-sm"></div>
+            <div class="bg-white p-3 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#E8B9DD]/20 transform rotate-1 hover:rotate-0 transition-transform duration-300 cursor-pointer memory-card" data-img="C:\Users\raisa\Downloads\photos_printpdf.3083114.jpg">
+              <div class="aspect-video rounded-xl overflow-hidden mb-3 bg-gray-100">
+                <!-- MEMORY IMAGE 2 - Change this URL -->
+                <img alt="Christmas 2025" class="w-full h-full object-cover" src="C:\Users\raisa\Downloads\gft\photos_printpdf.3083114.jpg"/>
+              </div>
+              <!-- MEMORY CAPTION 2 - Edit this text -->
+              <p class="font-serif text-[#958296] text-sm italic">"Met after so long..."</p>
+              <div class="mt-2 flex justify-between items-center">
+                <span class="text-[10px] text-gray-400 font-medium">MAY 2024</span>
+                <button class="like-btn">
+                  <span class="iconify text-[#F3BCBC] text-lg" data-icon="solar:heart-outline"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Module 3: Message for You -->
+      <section class="px-5 py-6 bg-white my-4 mx-4 rounded-3xl shadow-sm border border-pink-50 relative overflow-hidden">
+        <!-- Decor -->
+        <span class="iconify absolute top-4 right-4 text-[#EDDDB7] text-2xl" data-icon="ph:sparkle-fill"></span>
+        <span class="iconify absolute bottom-4 left-4 text-[#98E3D5] text-xl" data-icon="ph:star-four-fill"></span>
+        <h2 class="text-center text-xl font-bold text-[#4A3731] mb-4">A Message for You</h2>
+        <!-- PERSONAL MESSAGE - Edit this text -->
+        <p id="personal-message" class="font-serif text-center text-[#958296] leading-relaxed text-[15px]">
+          Another year around the sun, and you shine brighter than ever. May this day be filled with all the joy you bring to others. Let's make 2026 our best chapter yet!
+        </p>
+        <div class="mt-6 flex justify-center">
+          <button class="px-6 py-2 bg-gradient-to-r from-[#FB91C5] to-[#F3BCBC] text-white rounded-full text-sm font-bold shadow-lg shadow-pink-200 hover:scale-105 active:scale-95 transition-transform flex items-center gap-2" id="letter-btn">
+            <span class="iconify" data-icon="solar:letter-heart-bold"></span>
+            Read Full Letter
+          </button>
+        </div>
+      </section>
+      
+      <!-- Module 4: Digital Gift Box (Now with only 3 gifts) -->
+      <section class="px-5 pb-8">
+        <h2 class="text-lg font-bold text-[#4A3731] mb-4 flex items-center gap-2">
+          <span class="iconify text-[#EDDDB7]" data-icon="solar:gift-bold"></span>
+          Surprise Box
+        </h2>
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Gift 1: Coupons -->
+          <div class="aspect-square bg-white border border-[#F3BCBC]/30 rounded-2xl flex flex-col items-center justify-center p-4 hover:shadow-md transition-shadow group cursor-pointer gift-btn" data-gift="coupons">
+            <div class="w-12 h-12 rounded-full bg-[#FFF5F8] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <span class="iconify text-[#FB91C5] text-2xl" data-icon="solar:ticket-sale-bold"></span>
+            </div>
+            <span class="text-xs font-semibold text-[#958296]">Coupons</span>
+          </div>
+          
+          <!-- Gift 2: Voice Note -->
+          <div class="aspect-square bg-white border border-[#F3BCBC]/30 rounded-2xl flex flex-col items-center justify-center p-4 hover:shadow-md transition-shadow group cursor-pointer gift-btn" data-gift="voice">
+            <div class="w-12 h-12 rounded-full bg-[#FFF5F8] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <span class="iconify text-[#FB91C5] text-2xl" data-icon="solar:microphone-3-bold"></span>
+            </div>
+            <span class="text-xs font-semibold text-[#958296]">Voice Note</span>
+          </div>
+          
+          <!-- Gift 3: Mystery (Now spans full width) -->
+          <div class="aspect-square bg-white border border-[#F3BCBC]/30 rounded-2xl flex flex-col items-center justify-center p-4 hover:shadow-md transition-shadow group cursor-pointer gift-btn col-span-2" data-gift="mystery">
+            <div class="w-12 h-12 rounded-full bg-[#FFF5F8] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <span class="iconify text-[#FB91C5] text-2xl" data-icon="solar:confetti-minimalistic-bold"></span>
+            </div>
+            <span class="text-xs font-semibold text-[#958296]">Mystery Gift</span>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Footer Space -->
+      <div class="h-4"></div>
+    </div>
+    
+    <!-- GALLERY PAGE -->
+    <div id="gallery-page" class="page">
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-6">
+          <span class="iconify text-[#FB91C5] text-2xl" data-icon="solar:gallery-bold"></span>
+          <h1 class="text-2xl font-bold text-[#4A3731]">Photo Gallery</h1>
+        </div>
+        
+        <p class="text-[#958296] mb-6 text-center">All our beautiful moments together in one place</p>
+        
+        <!-- Gallery Grid -->
+        <div class="grid grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto scrollbar-thin p-2">
+          <!-- Gallery Image 1 -->
+          <div class="aspect-square rounded-xl overflow-hidden cursor-pointer gallery-img" data-img="C:\Users\raisa\Downloads\photos_printpdf.3083114.jpg">
+            <img src="C:\Users\raisa\Downloads\gft\photos_printpdf.3083114.jpg" alt="Fun Times" class="w-full h-full object-cover hover:scale-110 transition-transform duration-300">
+          </div>
+          
+          <!-- Gallery Image 2 -->
+          <div class="aspect-square rounded-xl overflow-hidden cursor-pointer gallery-img" data-img="C:\Users\raisa\Downloads\Screenshot_20250802_165809.jpg">
+            <img src="C:\Users\raisa\Downloads\gft\Screenshot_20250802_165809.jpg" alt="Best Friends" class="w-full h-full object-cover hover:scale-110 transition-transform duration-300">
+          </div>
+          
+          <!-- Gallery Image 3 -->
+          <div class="aspect-square rounded-xl overflow-hidden cursor-pointer gallery-img" data-img="C:\Users\raisa\Downloads\Snapchat-126718465.jpg">
+            <img src="C:\Users\raisa\Downloads\gft\Snapchat-126718465.jpg" alt="Adventure" class="w-full h-full object-cover hover:scale-110 transition-transform duration-300">
+          </div>
+          
+          <!-- Gallery Image 4 -->
+          <div class="aspect-square rounded-xl overflow-hidden cursor-pointer gallery-img" data-img="C:\Users\raisa\Downloads\photos_printpdf.2282274.jpg">
+            <img src="C:\Users\raisa\Downloads\gft\photos_printpdf.2282274.jpg" alt="Smiles" class="w-full h-full object-cover hover:scale-110 transition-transform duration-300">
+          </div>
+          
+          <!-- Gallery Image 5 -->
+          <div class="aspect-square rounded-xl overflow-hidden cursor-pointer gallery-img" data-img="C:\Users\raisa\Downloads\Screenshot_20230916_150245.jpg">
+            <img src="C:\Users\raisa\Downloads\gft\IMG-20251024-WA0051.jpg" alt="Celebration" class="w-full h-full object-cover hover:scale-110 transition-transform duration-300">
+          </div>
+          
+          <!-- Add more images here -->
+        </div>
+        
+        <div class="mt-8 text-center">
+          <button class="px-6 py-2 bg-gradient-to-r from-[#98E3D5] to-[#EDDDB7] text-[#4A3731] rounded-full text-sm font-bold shadow-md hover:scale-105 transition-transform" id="add-photo-btn">
+            <span class="iconify align-middle" data-icon="solar:add-circle-bold"></span>
+            Add More Photos
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- WISHLIST PAGE -->
+    <div id="wishlist-page" class="page">
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-6">
+          <span class="iconify text-[#FB91C5] text-2xl" data-icon="solar:gift-linear"></span>
+          <h1 class="text-2xl font-bold text-[#4A3731]">Birthday Wishlist</h1>
+        </div>
+        
+        <p class="text-[#958296] mb-6 text-center">Your wishlist for the coming year - let's make dreams come true!</p>
+        
+        <!-- Wishlist Items -->
+        <div class="space-y-4 max-h-[60vh] overflow-y-auto scrollbar-thin p-2">
+          <!-- Wish 1 -->
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-[#F3BCBC]/20 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FB91C5] to-[#F3BCBC] flex items-center justify-center">
+              <span class="iconify text-white text-2xl" data-icon="solar:planet-bold"></span>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-[#4A3731]">Beach Vacation</h3>
+              <p class="text-sm text-gray-600">Tropical getaway with endless sunsets</p>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center wish-check">
+              <span class="iconify text-[#FB91C5]" data-icon="solar:check-circle-outline"></span>
+            </button>
+          </div>
+          
+          <!-- Wish 2 -->
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-[#F3BCBC]/20 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#98E3D5] to-[#EDDDB7] flex items-center justify-center">
+              <span class="iconify text-white text-2xl" data-icon="solar:book-bold"></span>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-[#4A3731]">Learn Photography</h3>
+              <p class="text-sm text-gray-600">Capture beautiful moments together</p>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center wish-check">
+              <span class="iconify text-[#FB91C5]" data-icon="solar:check-circle-outline"></span>
+            </button>
+          </div>
+          
+          <!-- Wish 3 -->
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-[#F3BCBC]/20 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FB91C5] to-[#E8B9DD] flex items-center justify-center">
+              <span class="iconify text-white text-2xl" data-icon="solar:chef-hat-heart-bold"></span>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-[#4A3731]">Cooking Class</h3>
+              <p class="text-sm text-gray-600">Learn to make delicious desserts</p>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center wish-check">
+              <span class="iconify text-[#FB91C5]" data-icon="solar:check-circle-outline"></span>
+            </button>
+          </div>
+          
+          <!-- Wish 4 -->
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-[#F3BCBC]/20 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#EDDDB7] to-[#98E3D5] flex items-center justify-center">
+              <span class="iconify text-white text-2xl" data-icon="solar:stars-line-bold"></span>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-[#4A3731]">Stargazing Night</h3>
+              <p class="text-sm text-gray-600">Camping trip under the stars</p>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center wish-check">
+              <span class="iconify text-[#FB91C5]" data-icon="solar:check-circle-outline"></span>
+            </button>
+          </div>
+          
+          <!-- Wish 5 -->
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-[#F3BCBC]/20 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E8B9DD] to-[#98E3D5] flex items-center justify-center">
+              <span class="iconify text-white text-2xl" data-icon="solar:vinyl-record-bold"></span>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-[#4A3731]">Concert Tickets</h3>
+              <p class="text-sm text-gray-600">See our favorite artist live</p>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center wish-check">
+              <span class="iconify text-[#FB91C5]" data-icon="solar:check-circle-outline"></span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Add New Wish -->
+        <div class="mt-8 p-4 bg-gradient-to-r from-[#FFF5F8] to-white rounded-2xl border border-dashed border-[#F3BCBC]">
+          <h3 class="font-bold text-[#4A3731] mb-2 flex items-center gap-2">
+            <span class="iconify" data-icon="solar:add-square-bold"></span>
+            Add Your Wish
+          </h3>
+          <div class="flex gap-2">
+            <input type="text" id="new-wish-input" placeholder="What do you wish for this year?" class="flex-1 px-4 py-2 rounded-full border border-[#F3BCBC] focus:outline-none focus:ring-2 focus:ring-[#FB91C5]">
+            <button class="px-4 py-2 bg-gradient-to-r from-[#FB91C5] to-[#F3BCBC] text-white rounded-full font-bold" id="add-wish-btn">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </main>
+  
+  <!-- Bottom Bar (80px) - Fixed - REMOVED PROFILE BUTTON -->
+  <nav class="h-[80px] w-full absolute bottom-0 left-0 bg-white border-t border-gray-50 flex items-start justify-around pt-4 pb-2 z-50">
+    <!-- Nav Item Home -->
+    <button class="flex flex-col items-center gap-1 w-16 group nav-btn active" data-page="home">
+      <div class="w-10 h-8 flex items-center justify-center rounded-full bg-[#FFF5F8] group-hover:bg-pink-100 transition-colors">
+        <span class="iconify text-[#FB91C5] text-2xl" data-icon="solar:home-heart-bold"></span>
+      </div>
+      <span class="text-[10px] text-[#FB91C5] font-medium">Home</span>
+    </button>
+    
+    <!-- Nav Item Gallery -->
+    <button class="flex flex-col items-center gap-1 w-16 group opacity-60 hover:opacity-100 transition-opacity nav-btn" data-page="gallery">
+      <div class="w-10 h-8 flex items-center justify-center rounded-full">
+        <span class="iconify text-[#4A3731] text-2xl" data-icon="solar:gallery-bold"></span>
+      </div>
+      <span class="text-[10px] text-[#4A3731] font-medium">Gallery</span>
+    </button>
+    
+    <!-- Nav Item Wishlist -->
+    <button class="flex flex-col items-center gap-1 w-16 group opacity-60 hover:opacity-100 transition-opacity nav-btn" data-page="wishlist">
+      <div class="w-10 h-8 flex items-center justify-center rounded-full">
+        <span class="iconify text-[#4A3731] text-2xl" data-icon="solar:gift-linear"></span>
+      </div>
+      <span class="text-[10px] text-[#4A3731] font-medium">Wishlist</span>
+    </button>
+    
+    <!-- Removed Profile Button - Only 3 buttons now -->
+  </nav>
+</div>
+
+<script>
+  // Customization Instructions
+  console.log(`
+  🎂 BIRTHDAY APP CUSTOMIZATION INSTRUCTIONS 🎂
+  
+  1. CHANGE IMAGES:
+     - Hero Image: Line 119 - Change the src URL
+     - Memory 1: Line 151 - Change the src URL and data-img attribute
+     - Memory 2: Line 169 - Change the src URL and data-img attribute
+     - Gallery Images: Lines 220-258 - Change all src URLs
+  
+  2. CHANGE TEXT:
+     - Hero Message: Line 127 - Edit the h1 text
+     - Memory Captions: Lines 153 and 171 - Edit the italic text
+     - Personal Message: Line 185 - Edit the paragraph text
+     - Letter Content: Line 30 - Edit the letter content
+     - Wishlist Items: Lines 280-342 - Edit the wish titles and descriptions
+  
+  3. ADD MORE CONTENT:
+     - Gallery: Copy a gallery image div and change the src
+     - Wishlist: Copy a wish item div and edit the content
+  `);
+  
+  // JavaScript for interactive functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎉 Birthday App Loaded! All pages are now functional.');
+    
+    // Current page state
+    let currentPage = 'home';
+    
+    // Audio for music button
+    const birthdaySong = new Audio("C:\\Users\\raisa\\Downloads\\gft\\andriig-happy-birthday-471211.mp3");
+    let isPlaying = true;
+    
+    // Music button functionality
+    const musicBtn = document.getElementById('music-btn');
+    if (musicBtn) {
+      musicBtn.addEventListener('click', () => {
+        if (isPlaying) {
+          birthdaySong.pause();
+          musicBtn.querySelector('.iconify').style.animation = 'none';
+          isPlaying = false;
+        } else {
+          birthdaySong.play();
+          musicBtn.querySelector('.iconify').style.animation = 'pulse-soft 1s infinite';
+          isPlaying = true;
+        }
+      });
+    }
+    
+    // Heart button functionality
+    const heartBtn = document.getElementById('heart-btn');
+    if (heartBtn) {
+      heartBtn.addEventListener('click', () => {
+        createHearts(15);
+      });
+    }
+    
+    // Letter button functionality
+    const letterBtn = document.getElementById('letter-btn');
+    const letterModal = document.getElementById('letter-modal');
+    const closeLetterModal = document.getElementById('close-letter-modal');
+    
+    if (letterBtn) {
+      letterBtn.addEventListener('click', () => {
+        letterModal.classList.add('active');
+      });
+    }
+    
+    if (closeLetterModal) {
+      closeLetterModal.addEventListener('click', () => {
+        letterModal.classList.remove('active');
+      });
+    }
+    
+    // Gift buttons functionality
+    const giftButtons = document.querySelectorAll('.gift-btn');
+    
+    giftButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const giftType = button.getAttribute('data-gift');
+        
+        switch(giftType) {
+          case 'coupons':
+            document.getElementById('coupons-modal').classList.add('active');
+            break;
+            
+          case 'voice':
+            alert("🎵 Voice Note: Playing a special birthday message!");
+            break;
+            
+          case 'mystery':
+            triggerConfetti();
+            button.querySelector('.iconify').style.transform = 'scale(1.4) rotate(180deg)';
+            setTimeout(() => {
+              button.querySelector('.iconify').style.transform = 'scale(1) rotate(0deg)';
+            }, 300);
+            alert("🎁 Mystery Gift: You've unlocked a virtual hug and the promise of an amazing celebration together!");
+            break;
+        }
+      });
+    });
+    
+    // Modal close buttons
+    const closeCouponsModal = document.getElementById('close-coupons-modal');
+    if (closeCouponsModal) {
+      closeCouponsModal.addEventListener('click', () => {
+        document.getElementById('coupons-modal').classList.remove('active');
+      });
+    }
+    
+    const closeHiddenPicModal = document.getElementById('close-hidden-pic-modal');
+    if (closeHiddenPicModal) {
+      closeHiddenPicModal.addEventListener('click', () => {
+        document.getElementById('hidden-pic-modal').classList.remove('active');
+      });
+    }
+    
+    // Close modals when clicking outside
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('active');
+        }
+      });
+    });
+    
+    // Memory card click to enlarge
+    const memoryCards = document.querySelectorAll('.memory-card');
+    memoryCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const imgUrl = card.getAttribute('data-img');
+        document.getElementById('hidden-pic-img').src = imgUrl;
+        document.getElementById('hidden-pic-modal').classList.add('active');
+      });
+    });
+    
+    // Like buttons in memories
+    const likeButtons = document.querySelectorAll('.like-btn');
+    likeButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const icon = button.querySelector('.iconify');
+        if (icon.getAttribute('data-icon') === 'solar:heart-outline') {
+          icon.setAttribute('data-icon', 'solar:heart-bold');
+          icon.style.color = '#FB91C5';
+        } else {
+          icon.setAttribute('data-icon', 'solar:heart-outline');
+          icon.style.color = '#F3BCBC';
+        }
+      });
+    });
+    
+    // Gallery image click to enlarge
+    const galleryImages = document.querySelectorAll('.gallery-img');
+    galleryImages.forEach(img => {
+      img.addEventListener('click', () => {
+        const imgUrl = img.getAttribute('data-img');
+        document.getElementById('hidden-pic-img').src = imgUrl;
+        document.getElementById('hidden-pic-modal').classList.add('active');
+      });
+    });
+    
+    // Add photo button
+    const addPhotoBtn = document.getElementById('add-photo-btn');
+    if (addPhotoBtn) {
+      addPhotoBtn.addEventListener('click', () => {
+        alert("📸 In a real app, this would open your camera or photo library to add new photos!");
+        // You could implement actual file upload here
+      });
+    }
+    
+    // Wishlist check buttons
+    const wishChecks = document.querySelectorAll('.wish-check');
+    wishChecks.forEach(button => {
+      button.addEventListener('click', () => {
+        const icon = button.querySelector('.iconify');
+        if (icon.getAttribute('data-icon') === 'solar:check-circle-outline') {
+          icon.setAttribute('data-icon', 'solar:check-circle-bold');
+          icon.style.color = '#4CAF50';
+          button.style.backgroundColor = '#E8F5E9';
+        } else {
+          icon.setAttribute('data-icon', 'solar:check-circle-outline');
+          icon.style.color = '#FB91C5';
+          button.style.backgroundColor = '#FFF5F8';
+        }
+      });
+    });
+    
+    // Add new wish functionality
+    const addWishBtn = document.getElementById('add-wish-btn');
+    const newWishInput = document.getElementById('new-wish-input');
+    
+    if (addWishBtn && newWishInput) {
+      addWishBtn.addEventListener('click', () => {
+        const wishText = newWishInput.value.trim();
+        if (wishText) {
+          // Create new wish element
+          const wishList = document.querySelector('#wishlist-page .space-y-4');
+          const newWish = document.createElement('div');
+          newWish.className = 'bg-white p-4 rounded-2xl shadow-sm border border-[#F3BCBC]/20 flex items-center gap-4';
+          newWish.innerHTML = `
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#EDDDB7] to-[#98E3D5] flex items-center justify-center">
+              <span class="iconify text-white text-2xl" data-icon="solar:star-bold"></span>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-[#4A3731]">${wishText}</h3>
+              <p class="text-sm text-gray-600">New birthday wish</p>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center wish-check">
+              <span class="iconify text-[#FB91C5]" data-icon="solar:check-circle-outline"></span>
+            </button>
+          `;
+          
+          wishList.appendChild(newWish);
+          newWishInput.value = '';
+          
+          // Add event listener to new check button
+          newWish.querySelector('.wish-check').addEventListener('click', function() {
+            const icon = this.querySelector('.iconify');
+            if (icon.getAttribute('data-icon') === 'solar:check-circle-outline') {
+              icon.setAttribute('data-icon', 'solar:check-circle-bold');
+              icon.style.color = '#4CAF50';
+              this.style.backgroundColor = '#E8F5E9';
+            } else {
+              icon.setAttribute('data-icon', 'solar:check-circle-outline');
+              icon.style.color = '#FB91C5';
+              this.style.backgroundColor = '#FFF5F8';
+            }
+          });
+        }
+      });
+      
+      // Allow Enter key to add wish
+      newWishInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          addWishBtn.click();
+        }
+      });
+    }
+    
+    // Navigation functionality
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const pages = document.querySelectorAll('.page');
+    
+    function switchPage(pageId) {
+      // Update current page
+      currentPage = pageId;
+      
+      // Hide all pages
+      pages.forEach(page => {
+        page.classList.remove('active');
+      });
+      
+      // Show selected page
+      const activePage = document.getElementById(`${pageId}-page`);
+      if (activePage) {
+        activePage.classList.add('active');
+      }
+      
+      // Update active nav button
+      navButtons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('opacity-60');
+        const btnText = btn.querySelector('span:nth-child(2)');
+        if (btnText) btnText.style.color = '#4A3731';
+      });
+      
+      // Activate clicked button
+      const activeBtn = document.querySelector(`.nav-btn[data-page="${pageId}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.classList.remove('opacity-60');
+        const buttonText = activeBtn.querySelector('span:nth-child(2)');
+        if (buttonText) buttonText.style.color = '#FB91C5';
+      }
+    }
+    
+    // Add click event to nav buttons
+    navButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const page = button.getAttribute('data-page');
+        switchPage(page);
+      });
+    });
+    
+    // Function to create floating hearts
+    function createHearts(count) {
+      const container = document.getElementById('confetti-container');
+      
+      for (let i = 0; i < count; i++) {
+        const heart = document.createElement('div');
+        heart.innerHTML = '<span class="iconify" data-icon="solar:heart-bold"></span>';
+        heart.classList.add('absolute', 'text-pink-400', 'text-xl');
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.top = '100vh';
+        heart.style.animation = `confettiRain ${Math.random() * 2 + 1}s linear forwards`;
+        heart.style.opacity = '0.8';
+        
+        container.appendChild(heart);
+        
+        setTimeout(() => {
+          heart.remove();
+        }, 2000);
+      }
+    }
+    
+    // Function to trigger confetti
+    function triggerConfetti() {
+      createHearts(30);
+      
+      const container = document.getElementById('confetti-container');
+      for (let i = 0; i < 15; i++) {
+        const star = document.createElement('div');
+        star.innerHTML = '<span class="iconify" data-icon="solar:star-bold"></span>';
+        star.classList.add('absolute', 'text-yellow-300', 'text-lg');
+        star.style.left = Math.random() * 100 + 'vw';
+        star.style.top = '100vh';
+        star.style.animation = `confettiRain ${Math.random() * 2 + 1.5}s linear forwards`;
+        star.style.opacity = '0.9';
+        
+        container.appendChild(star);
+        
+        setTimeout(() => {
+          star.remove();
+        }, 2500);
+      }
+    }
+    
+    // Auto-trigger some hearts on load
+    setTimeout(() => {
+      createHearts(5);
+    }, 1000);
+  });
+</script>
+</body>
+</html>
